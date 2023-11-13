@@ -1,14 +1,33 @@
 // ============ GLOBAL VARIABELS ============ //
-const endpoint = ""; // To do: paste url to endpoint
+const endpoint = "http://localhost:3000";
+const headers = {
+    "Content-Type": "application/json"
+};
 let selectedUser;
 
+// ============ INIT APP ============ //
+
+window.addEventListener("load", initApp);
+
+function initApp() {
+    updateUsersGrid(); // to initialize the grid view with users
+    // event listeners
+    document.querySelector("#form-create").addEventListener("submit", createUser);
+    document.querySelector("#form-update").addEventListener("submit", updateUser);
+}
+
 // ============ READ ============ //
-// Read (GET) all users from Firebase (Database) using REST API
+
+async function updateUsersGrid() {
+    const users = await readUsers();
+    displayUsers(users);
+}
+
+// Read (GET) all users from backend using REST API
 async function readUsers() {
-    const response = await fetch(`${endpoint}/users.json`);
+    const response = await fetch(`${endpoint}/users`);
     const data = await response.json();
-    const users = Object.keys(data).map(key => ({ id: key, ...data[key] })); // from object to array
-    return users;
+    return data;
 }
 
 // Create HTML and display all users from given list
@@ -21,34 +40,48 @@ function displayUsers(list) {
             "beforeend",
             /*html*/ `
             <article>
+                <img src="${user.image}">
                 <h2>${user.name}</h2>
+                <p>${user.title}</p>
+                <a href="mailto:${user.mail}">${user.mail}</a>
+                 <div class="btns">
+                    <button class="btn-update-user">Update</button>
+                    <button class="btn-delete-user">Delete</button>
+                </div>
             </article>
         `
         );
-        // To do: Add event listeners
+        document
+            .querySelector("#users-grid article:last-child .btn-delete-user")
+            .addEventListener("click", () => deleteUser(user.id));
+        document
+            .querySelector("#users-grid article:last-child .btn-update-user")
+            .addEventListener("click", () => selectUser(user));
     }
 }
 
 // ============ CREATE ============ //
-// Create (POST) user to Firebase (Database) using REST API
+// Create (POST) user to backend using REST API
 async function createUser(event) {
     event.preventDefault();
-
-    // To do: add variables with reference to input fields (event.target.xxxx.value)
-
+    const name = event.target.name.value;
+    const title = event.target.title.value;
+    const mail = event.target.mail.value;
+    const image = event.target.image.value;
     // create a new user
-    const newUser = {}; // To do: add all fields/ variabels
+    const newUser = { name, title, mail, image };
     const userAsJson = JSON.stringify(newUser);
-    const response = await fetch(`${endpoint}/users.json`, {
+    const response = await fetch(`${endpoint}/users`, {
+        headers: headers,
         method: "POST",
         body: userAsJson
     });
 
     if (response.ok) {
         // if success, update the users grid
-        // To do: make sure to update the users grid in order to display the new user
+        updateUsersGrid();
         // and scroll to top
-        // To do: call scrollToTop to scroll when created
+        scrollToTop();
     }
 }
 
@@ -56,57 +89,49 @@ async function createUser(event) {
 function selectUser(user) {
     // Set global varaiable
     selectedUser = user;
-    // reference to update form
     const form = document.querySelector("#form-update");
-
-    // To do: set form input values with user.xxxx
-
+    form.name.value = user.name;
+    form.title.value = user.title;
+    form.mail.value = user.mail;
+    form.image.value = user.image;
     form.scrollIntoView({ behavior: "smooth" });
 }
 
 async function updateUser(event) {
     event.preventDefault();
-
-    // To do: add variables with reference to input fields (event.target.xxxx.value)
-
+    const name = event.target.name.value;
+    const title = event.target.title.value;
+    const mail = event.target.mail.value;
+    const image = event.target.image.value;
     // update user
-    const userToUpdate = {}; // To do: add all fields/ variabels
+    const userToUpdate = { name, title, mail, image };
     const userAsJson = JSON.stringify(userToUpdate);
-    const response = await fetch(`${endpoint}/users/${selectedUser.id}.json`, {
+    const response = await fetch(`${endpoint}/users/${selectedUser.id}`, {
+        headers: headers,
         method: "PUT",
         body: userAsJson
     });
     if (response.ok) {
         // if success, update the users grid
-        // To do: make sure to update the users grid in order to display the new user
+        updateUsersGrid();
         // and scroll to top
-        // To do: call scrollToTop to scroll when created
+        scrollToTop();
     }
 }
 
 // ================== DELETE ============ //
 async function deleteUser(id) {
-    const response = await fetch(`${endpoint}/users/${id}.json`, {
+    const response = await fetch(`${endpoint}/users/${id}`, {
         method: "DELETE"
     });
     if (response.ok) {
         // if success, update the users grid
-        // To do: make sure to update the users grid in order to display the new user
+        updateUsersGrid();
     }
 }
 
-// ================== Events and Event Listeners ============ //
-// To do: add submit event listener to create form (#form-create)
-// To do: add submit event listener to update form (#form-update)
+// ================== Events ============ //
 
 function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
-
-async function updateUsersGrid() {
-    const users = await readUsers();
-    displayUsers(users);
-}
-
-// ============ Init CRUD App ============ //
-// To do: call/ run updateUsersGrid to initialise the app
